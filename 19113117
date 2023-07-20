@@ -1,5 +1,6 @@
 import heapq
 
+
 def heuristic(node, goal):
     # Calculate the row and column coordinates for the current node and the goal node
     node_row, node_col = divmod(node - 1, 9)
@@ -9,7 +10,7 @@ def heuristic(node, goal):
     return ((goal_row - node_row) ** 2 + (goal_col - node_col) ** 2) ** 0.5
 
 
-def astar_search(start, goal, graph, rubbish, carrying_capacity, strength_limit):
+def astar_search(start, goal, graph, rubbish_bins, carrying_capacity, strength_limit):
     # Initialize the open list and closed set
     open_list = []
     closed_set = set()
@@ -67,6 +68,7 @@ def astar_search(start, goal, graph, rubbish, carrying_capacity, strength_limit)
 
     # No path found
     return None
+
 
 # Define the graph
 graph = {
@@ -127,7 +129,7 @@ graph = {
 }
 
 # Define the rubbish bin locations and weights
-rubbish = {
+rubbish_bins = {
     8: (30, 1),
     13: (5, 1),
     16: (10, 2),
@@ -150,32 +152,31 @@ disposal_rooms = [6, 48, 54]
 carrying_capacity = 5
 strength_limit = 40
 
-
-# Find the path to clear all the rubbish
+# Find the path to clear all the rubbish bins
 paths = []
 current_position = entry_point
 current_weight = 0
 current_volume = 0
 
-while rubbish:
+while rubbish_bins:
     # Find the nearest rubbish bin
-    nearest_bin = min(rubbish, key=lambda x: heuristic(current_position, x))
+    nearest_bin = min(rubbish_bins, key=lambda x: heuristic(current_position, x))
 
     # Find the path to the nearest bin
-    bin_path = astar_search(current_position, nearest_bin, graph, rubbish, carrying_capacity, strength_limit)
+    bin_path = astar_search(current_position, nearest_bin, graph, rubbish_bins, carrying_capacity, strength_limit)
 
     if bin_path:
         # Check if the current position is a disposal room
         if current_position in disposal_rooms:
             # Clear the rubbish bin in the disposal room
-            del rubbish[nearest_bin]
+            del rubbish_bins[nearest_bin]
             current_weight = 0
             current_volume = 0
             current_position = nearest_bin
             paths.append(bin_path)
         else:
             # Check if the rubbish bin can be moved to the nearest bin
-            bin_weight, bin_volume = rubbish[nearest_bin]
+            bin_weight, bin_volume = rubbish_bins[nearest_bin]
             if (
                 current_weight + bin_weight <= strength_limit
                 and current_volume + bin_volume <= carrying_capacity
@@ -184,6 +185,11 @@ while rubbish:
                 current_weight += bin_weight
                 current_volume += bin_volume
                 current_position = nearest_bin
+            else:
+                # Empty the rubbish bin in the disposal room
+                current_position = disposal_rooms[0]  # Assuming disposal room is always available
+                current_weight = 0
+                current_volume = 0
     else:
         # No path found to any remaining rubbish bin
         break
@@ -191,6 +197,12 @@ while rubbish:
 print("Paths:")
 for i, path in enumerate(paths):
     print("Path", i + 1, ":", path)
+
+if not rubbish_bins:
+    print("All the rubbish has been cleared.")
+else:
+    print("Some rubbish bins were not cleared.")
+
 
 if not rubbish:
     print("All the rubbish has been cleared.")
